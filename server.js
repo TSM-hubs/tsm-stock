@@ -74,7 +74,6 @@ function saveAndPushWhitelist(whitelistData) {
     }).on('error', () => {});
 }
 
-// Helper to query Google Drive API
 function queryGoogleDrive(apiPath) {
     return new Promise((resolve, reject) => {
         const url = `https://www.googleapis.com/drive/v3/files?${apiPath}&key=${DRIVE_API_KEY}`;
@@ -120,7 +119,6 @@ function formatFolderToUI(folderName) {
     return { vehicle: vehicle, color: colorOrReg, reg: '✨ New Stock' };
 }
 
-// --- WHITELIST SECURITY MIDDLEWARE ---
 app.use((req, res, next) => {
     if (req.path === '/pending' || req.path.startsWith('/admin')) return next();
 
@@ -149,13 +147,11 @@ app.get('/pending', (req, res) => {
     res.render('pending', { token: deviceToken });
 });
 
-// Search Google Drive Folders
 app.post('/search', async (req, res) => {
     let query = (req.body.query || '').trim().toLowerCase();
     if (BRAND_ALIASES[query]) query = BRAND_ALIASES[query];
 
     try {
-        // Fetch brands inside the main Google Drive folder
         const brandQuery = `q='${DRIVE_ROOT_FOLDER_ID}'+in+parents+and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&fields=files(id,name)`;
         const brandResult = await queryGoogleDrive(brandQuery);
         const brandFolders = brandResult.files || [];
@@ -163,7 +159,6 @@ app.post('/search', async (req, res) => {
         let allMatches = [];
 
         for (const brand of brandFolders) {
-            // Fetch vehicle folders inside each brand folder
             const vehicleQuery = `q='${brand.id}'+in+parents+and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&fields=files(id,name)`;
             const vehicleResult = await queryGoogleDrive(vehicleQuery);
             const vehicleFolders = vehicleResult.files || [];
@@ -185,33 +180,35 @@ app.post('/search', async (req, res) => {
     }
 });
 
-// Fetch vehicle images directly from Google Drive ID
+// Fixed Vehicle Route with Direct ID Support
 app.get('/vehicle', async (req, res) => {
     const { brand, folder, id } = req.query;
 
     try {
         let folderId = id;
-        if (!folderId) {
-            // Fallback search if ID isn't passed directly
-            const q = `q=name='${folder}'+and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&fields=files(id,name)`;
+
+        if (!folderId && folder) {
+            const q = `q=name='${folder.replace(/'/g, "\\'")}'+\\and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&fields=files(id,name)`;
             const result = await queryGoogleDrive(q);
-            if (result.files && result.files.length > 0) folderId = result.files[0].id;
+            if (result.files && result.files.length > 0) {
+                folderId = result.files[0].id;
+            }
         }
 
-        if (!folderId) return res.send('Folder not found in Google Drive.');
+        if (!folderId) {
+            return res.status(404).send('Folder not found in Google Drive.');
+        }
 
-        // Get images inside the vehicle folder
         const imgQuery = `q='${folderId}'+in+parents+and+mimeType+contains+'image/'+and+trashed=false&fields=files(id,name)&orderBy=name`;
         const imgResult = await queryGoogleDrive(imgQuery);
         const images = (imgResult.files || []).map(file => `https://lh3.googleusercontent.com/d/${file.id}`);
 
-        res.render('vehicle', { brand, folder, images, ui: formatFolderToUI(folder) });
+        res.render('vehicle', { brand: brand || 'Vehicle', folder: folder || 'Details', images, ui: formatFolderToUI(folder || '') });
     } catch (err) {
-        res.send('Error loading images from Google Drive.');
+        res.status(500).send('Error loading images from Google Drive.');
     }
 });
 
-// --- ADMIN PANEL ROUTES ---
 app.get('/admin', (req, res) => {
     res.render('admin-login', { error: null });
 });

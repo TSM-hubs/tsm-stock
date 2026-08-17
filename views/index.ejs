@@ -6,70 +6,129 @@
     <title>TSM Stock Finder</title>
     <style>
         :root {
-            --bg: #f4f6f9;
-            --surface: #ffffff;
-            --text: #2c3e50;
-            --text-secondary: #7f8c8d;
-            --primary: #e74c3c;
-            --card-border: #e1e8ed;
-            --input-bg: #ffffff;
-            --badge-bg: #ecf0f1;
+            --bg-color: #f4f4f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --primary-color: #e53935;
+            --border-color: #dddddd;
+        .dark-theme {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --primary-color: #ef5350;
+            --border-color: #333333;
         }
-        [data-theme="dark"] {
-            --bg: #121212;
-            --surface: #1e1e1e;
-            --text: #e0e0e0;
-            --text-secondary: #a0a0a0;
-            --primary: #bb86fc;
-            --card-border: #333333;
-            --input-bg: #2c2c2c;
-            --badge-bg: #2a2a2a;
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; transition: background 0.3s, color 0.3s; }
-        .container { max-width: 600px; margin: auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        h1 { font-size: 22px; color: var(--primary); margin: 0; font-weight: 600; }
-        .theme-btn { background: var(--surface); border: 1px solid var(--card-border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
-        
-        form { display: flex; gap: 10px; margin-bottom: 25px; background: var(--surface); padding: 8px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--card-border); }
-        input { flex: 1; padding: 12px 14px; font-size: 16px; border-radius: 8px; border: none; background: var(--input-bg); color: var(--text); outline: none; }
-        button[type="submit"] { padding: 0 20px; font-size: 16px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        
-        .card { background: var(--surface); padding: 16px; border-radius: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid var(--card-border); border-left: 5px solid var(--primary); }
-        .card-info h3 { margin: 0 0 8px 0; font-size: 16px; color: var(--text); }
-        .details-row { display: flex; gap: 8px; font-size: 13px; flex-wrap: wrap; }
-        .badge { background: var(--badge-bg); padding: 4px 8px; border-radius: 6px; color: var(--text-secondary); font-weight: 600; }
-        
-        .btn-view { background: var(--primary); color: #fff; padding: 10px 14px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 13px; white-space: nowrap; }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 800px;
+            margin: 0 auto 20px auto;
+        }
+        h1 {
+            margin: 0;
+            color: var(--primary-color);
+        }
+        .theme-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 12px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .search-container {
+            max-width: 800px;
+            margin: 0 auto 30px auto;
+            display: flex;
+            gap: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 12px 15px;
+            font-size: 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            background-color: var(--card-bg);
+            color: var(--text-color);
+        }
+        button[type="submit"] {
+            padding: 12px 25px;
+            font-size: 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        .results-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 15px 20px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+        }
+        .vehicle-info h3 {
+            margin: 0 0 5px 0;
+        }
+        .vehicle-info p {
+            margin: 0;
+            color: #777;
+            font-size: 14px;
+        }
+        .btn-view {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 8px 15px;
+            text-decoration: none;
+            border-radius: 5px;
+            font-size: 14px;
+        }
     </style>
 </head>
-<body data-theme="light">
-    <div class="container">
-        <div class="header">
-            <h1>🚗 TSM Stock Finder</h1>
-            <button class="theme-btn" onclick="toggleTheme()">🌓 Theme</button>
-        </div>
+<body>
 
-        <form action="/search" method="POST">
-            <input type="text" name="query" value="<%= query %>" placeholder="Type vehicle model (e.g. Polo, Caddy)..." required autocomplete="off">
+    <div class="header-container">
+        <h1>🚗 TSM Stock Finder</h1>
+        <button class="theme-btn" onclick="toggleTheme()">🌓 Theme</button>
+    </div>
+
+    <div class="search-container">
+        <form action="/search" method="POST" style="display: flex; width: 100%; gap: 10px;">
+            <input type="text" name="query" value="<%= query || '' %>" placeholder="Type vehicle model (e.g., Polo, Caddy, Ranger)..." required autocomplete="off">
             <button type="submit">Search</button>
         </form>
+    </div>
 
+    <div class="results-container">
         <% if (matches !== null) { %>
             <% if (matches.length === 0) { %>
-                <p style="text-align: center; color: var(--text-secondary);">No vehicles found for "<%= query %>".</p>
+                <p style="text-align: center; color: #777;">No vehicles found matching "<%= query %>".</p>
             <% } else { %>
-                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">Found <%= matches.length %> match(es):</p>
-                <% matches.forEach((item) => { %>
+                <p style="margin-bottom: 15px; font-weight: bold;">Found <%= matches.length %> result(s):</p>
+                <% matches.forEach(match => { %>
                     <div class="card">
-                        <div class="card-info">
-                            <h3><%= item.ui.vehicle %></h3>
-                            <div class="details-row">
-                                <span class="badge">🎨 <%= item.ui.color %></span>
-                                <span class="badge">📋 <%= item.ui.reg %></span>
-                            </div>
+                        <div class="vehicle-info">
+                            <h3><%= match.ui.vehicle %> (<%= match.brand %>)</h3>
+                            <p>Color: <%= match.ui.color %> | Reg: <%= match.ui.reg %></p>
                         </div>
-                        <a class="btn-view" href="/vehicle?brand=<%= encodeURIComponent(item.brand) %>&folder=<%= encodeURIComponent(item.folderName) %>">View Photos</a>
+                        <a href="/vehicle?brand=<%= encodeURIComponent(match.brand) %>&folder=<%= encodeURIComponent(match.folderName) %>&id=<%= match.folderId %>" class="btn-view">View Photos</a>
                     </div>
                 <% }) %>
             <% } %>
@@ -77,14 +136,12 @@
     </div>
 
     <script>
-        const savedTheme = localStorage.getItem('tsm_theme') || 'light';
-        document.body.setAttribute('data-theme', savedTheme);
-
         function toggleTheme() {
-            const current = document.body.getAttribute('data-theme');
-            const next = current === 'light' ? 'dark' : 'light';
-            document.body.setAttribute('data-theme', next);
-            localStorage.setItem('tsm_theme', next);
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+        }
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-theme');
         }
     </script>
 </body>
