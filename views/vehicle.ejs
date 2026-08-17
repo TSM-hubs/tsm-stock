@@ -3,91 +3,171 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><%= folder %> - Photos</title>
+    <title><%= ui.vehicle %> - TSM Stock Photos</title>
     <style>
         :root {
-            --bg: #f4f6f9;
-            --surface: #ffffff;
-            --text: #2c3e50;
-            --text-secondary: #7f8c8d;
-            --primary: #e74c3c;
-            --accent: #27ae60;
-            --card-border: #e1e8ed;
+            --bg-color: #f4f4f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --primary-color: #e53935;
+            --border-color: #dddddd;
         }
-        [data-theme="dark"] {
-            --bg: #121212;
-            --surface: #1e1e1e;
-            --text: #e0e0e0;
-            --text-secondary: #a0a0a0;
-            --primary: #bb86fc;
-            --accent: #03dac6;
-            --card-border: #333333;
+        .dark-theme {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --primary-color: #ef5350;
+            --border-color: #333333;
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); padding: 15px; margin: 0; transition: background 0.3s; }
-        .container { max-width: 600px; margin: auto; padding-bottom: 80px; }
-        .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        .back { color: var(--primary); text-decoration: none; font-weight: 600; font-size: 14px; }
-        .theme-btn { background: var(--surface); border: 1px solid var(--card-border); color: var(--text); padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600; }
-        
-        h2 { font-size: 18px; margin: 0 0 5px 0; color: var(--text); }
-        .sub-details { font-size: 13px; color: var(--text-secondary); margin-bottom: 15px; }
-        .instructions { background: var(--surface); padding: 12px; border-radius: 10px; font-size: 13px; margin-bottom: 20px; border: 1px solid var(--card-border); border-left: 4px solid var(--primary); }
-        
-        .batch-btn { display: block; width: 100%; background: var(--accent); color: #fff; padding: 15px; text-align: center; border-radius: 10px; font-size: 16px; font-weight: bold; border: none; cursor: pointer; margin-bottom: 25px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
-        
-        .photo-grid { display: grid; grid-template-columns: 1fr; gap: 16px; }
-        .photo-card { background: var(--surface); border-radius: 10px; overflow: hidden; border: 1px solid var(--card-border); box-shadow: 0 2px 8px rgba(0,0,0,0.04); }
-        .photo-card img { width: 100%; height: auto; display: block; }
-        .card-footer { padding: 12px; display: flex; justify-content: space-between; align-items: center; }
-        .photo-label { font-size: 13px; color: var(--text-secondary); }
-        .save-btn { background: var(--primary); color: #fff; padding: 8px 14px; text-decoration: none; border-radius: 6px; font-size: 13px; font-weight: 600; }
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            text-align: center;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        .top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .back-btn, .theme-btn {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 15px;
+            border-radius: 5px;
+            text-decoration: none;
+            cursor: pointer;
+        }
+        h2 {
+            margin: 5px 0;
+        }
+        .badge-container {
+            margin-bottom: 15px;
+        }
+        .badge {
+            display: inline-block;
+            background: rgba(229, 57, 53, 0.1);
+            color: var(--primary-color);
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 14px;
+            font-weight: bold;
+            margin: 0 5px;
+        }
+        .carousel-card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+        .image-container {
+            width: 100%;
+            height: 400px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #000;
+        }
+        .image-container img {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        .card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 20px;
+            background-color: var(--card-bg);
+            border-top: 1px solid var(--border-color);
+        }
+        .action-btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            text-decoration: none;
+        }
+        .action-btn:hover {
+            opacity: 0.9;
+        }
+        .bulk-download {
+            display: block;
+            background-color: #2e7d32;
+            color: white;
+            padding: 12px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
     </style>
 </head>
-<body data-theme="light">
+<body>
+
     <div class="container">
-        <div class="header-top">
-            <a class="back" href="/">← Back to Search</a>
+        <div class="top-bar">
+            <a href="/" class="back-btn">⬅ Back to Search</a>
             <button class="theme-btn" onclick="toggleTheme()">🌓 Theme</button>
         </div>
-        
+
         <h2><%= ui.vehicle %></h2>
-        <div class="sub-details">🎨 <%= ui.color %> | 📋 <%= ui.reg %></div>
-        
-        <div class="instructions">
-            💡 <b>Quick Tip:</b> Click <b>"Download All Photos"</b> to save every image to your phone instantly!
+        <div class="badge-container">
+            <span class="badge">🎨 <%= ui.color %></span>
+            <span class="badge">📋 <%= ui.reg %></span>
         </div>
 
-        <button class="batch-btn" onclick="downloadAll()">📥 Download All Photos (<%= images.length %>)</button>
+        <% if (images && images.length > 0) { %>
+            <a href="<%= images[0] %>" target="_blank" class="bulk-download">📥 Open Full Image Gallery in Google Drive</a>
 
-        <div class="photo-grid">
-            <% images.forEach((img, idx) => { %>
-                <div class="photo-card">
-                    <img src="/photos/<%= encodeURIComponent(brand) %>/<%= encodeURIComponent(folder) %>/<%= encodeURIComponent(img) %>" loading="lazy">
-                    <div class="card-footer">
-                        <span class="photo-label">Photo <%= idx + 1 %> of <%= images.length %></span>
-                        <a class="save-btn" href="/photos/<%= encodeURIComponent(brand) %>/<%= encodeURIComponent(folder) %>/<%= encodeURIComponent(img) %>" download="TSM_<%= folder %>_<%= idx+1 %>.jpg">Save Photo</a>
-                    </div>
+            <div class="carousel-card">
+                <div class="image-container">
+                    <img id="active-image" src="<%= images[0] %>" alt="Vehicle Photo">
                 </div>
-            <% }) %>
-        </div>
+                <div class="card-footer">
+                    <span id="counter">Photo 1 of <%= images.length %></span>
+                    <% if (images.length > 1) { %>
+                        <button class="action-btn" onclick="nextImage()">Next Photo ➡</button>
+                    <% } %>
+                    <a id="save-btn" href="<%= images[0] %>" target="_blank" download class="action-btn" style="background-color: #2e7d32;">Save Photo</a>
+                </div>
+            </div>
+        <% } else { %>
+            <p style="padding: 40px; color: #777;">No photos found for this vehicle folder.</p>
+        <% } %>
     </div>
 
     <script>
-        const savedTheme = localStorage.getItem('tsm_theme') || 'light';
-        document.body.setAttribute('data-theme', savedTheme);
+        const images = <%- JSON.stringify(images || []) %>;
+        let currentIndex = 0;
 
-        function toggleTheme() {
-            const current = document.body.getAttribute('data-theme');
-            const next = current === 'light' ? 'dark' : 'light';
-            document.body.setAttribute('data-theme', next);
-            localStorage.setItem('tsm_theme', next);
+        function nextImage() {
+            if (images.length === 0) return;
+            currentIndex = (currentIndex + 1) % images.length;
+            document.getElementById('active-image').src = images[currentIndex];
+            document.getElementById('counter').innerText = `Photo ${currentIndex + 1} of ${images.length}`;
+            document.getElementById('save-btn').href = images[currentIndex];
         }
 
-        function downloadAll() {
-            const links = document.querySelectorAll('.save-btn');
-            links.forEach((link, index) => {
-                setTimeout(() => { link.click(); }, index * 200);
-            });
+        function toggleTheme() {
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+        }
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-theme');
         }
     </script>
 </body>
