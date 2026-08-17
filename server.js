@@ -3,12 +3,11 @@ const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
+const https = require('https');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// On Render, we can point to a local temp file or use environment variables. 
-// For simplicity and zero database setup, we store whitelist entries in memory/env or a fallback file.
 const WHITELIST_FILE = path.join(__dirname, 'whitelist.json');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
 
@@ -17,10 +16,7 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-// NOTE: Since Render is in the cloud, stock photos won't be in G:\ My Drive unless you sync them 
-// or point STOCK_ROOT to a synced folder path.
 const STOCK_ROOT = process.env.STOCK_ROOT || path.join(__dirname, 'stock_photos');
-
 app.use('/photos', express.static(STOCK_ROOT));
 
 function getWhitelist() {
@@ -29,17 +25,65 @@ function getWhitelist() {
             return JSON.parse(fs.readFileSync(WHITELIST_FILE, 'utf8'));
         }
     } catch (err) {}
-    
-    // Default initial whitelist fallback if file doesn't exist
     return { "DeWet": "TSM-ADMIN" };
 }
 
-function saveWhitelist(data) {
-    try {
-        fs.writeFileSync(WHITELIST_FILE, JSON.stringify(data, null, 2), 'utf8');
-    } catch (err) {
-        console.error("Could not save whitelist file:", err);
-    }
+// Function to auto-push whitelist changes to GitHub so they persist across deploys
+function saveAndPushWhitelist(whitelistData) {
+    fs.writeFileSync(WHITELIST_FILE, JSON.stringify(whitelistData, null, 2), 'utf8');
+
+    const token = process.env.GITHUB_TOKEN;
+    if (!token) return; // If token isn't set yet, just save locally
+
+    const repo = 'TSM-hubs/tsm-stock';
+    const filePath = 'whitelist.json';
+    const fileContent = Buffer.from(JSON.stringify(whitelistData, null, 2)).toString('base64');
+
+    // Step 1: Get current file SHA on GitHub
+    const getOptions = {
+        hostname: 'api.github.com',
+        path: `/repos/${repo}/contents/${filePath}`,
+        method: 'GET',
+        headers: { 'User-Agent': 'TSM-Stock-App', 'Authorization': `token ${token}` }
+    };
+
+    https.get(getOptions, (res) => {
+        let data = '';
+        res.on('data', chunk => data += chunk);
+        res.on('end', () => {
+            let sha = '';
+            try {
+                sha = JSON.parse(data).sha;
+            } catch (e) {}
+
+            // Step 2: Update file on GitHub
+            const payload = JSON.stringify({
+                message: 'Auto-update whitelist via Admin Panel',
+                content: fileContent,
+                sha: sha
+            });
+
+            const putOptions = {
+                hostname: 'api.github.com',
+                path: `/repos/${repo}/contents/${filePath}`,
+                method: 'PUT',
+                headers: {
+                    'User-Agent': 'TSM-Stock-App',
+                    'Authorization': `token ${token}`,
+                    'Content-Type': 'application/json',
+                    'Content-Length': Buffer.byteLength(payload)
+                }
+            };
+
+            const req = https.request(putOptions, (putRes) => {
+                // Successfully pushed to GitHub
+            });
+            req.write(payload);
+            req.end();
+        });
+    }).on('error', (err) => {
+        console.error('GitHub sync error:', err);
+    });
 }
 
 const BRAND_ALIASES = {
@@ -90,18 +134,15 @@ app.use((req, res, next) => {
     next();
 });
 
-// 1. Home / Search Page
 app.get('/', (req, res) => {
     res.render('index', { matches: null, query: '' });
 });
 
-// 2. Pending Authorization Page
 app.get('/pending', (req, res) => {
     const deviceToken = req.cookies.tsm_device_token;
     res.render('pending', { token: deviceToken });
 });
 
-// 3. Handle Search Query
 app.post('/search', (req, res) => {
     let query = (req.body.query || '').trim().toLowerCase();
     if (BRAND_ALIASES[query]) query = BRAND_ALIASES[query];
@@ -125,7 +166,6 @@ app.post('/search', (req, res) => {
     res.render('index', { matches: allMatches, query });
 });
 
-// 4. Vehicle Gallery Page
 app.get('/vehicle', (req, res) => {
     const { brand, folder } = req.query;
     const targetPath = path.join(STOCK_ROOT, brand, folder);
@@ -164,7 +204,7 @@ app.post('/admin/add', (req, res) => {
     if (name && token) {
         const whitelist = getWhitelist();
         whitelist[name.trim()] = token.trim();
-        saveWhitelist(whitelist);
+        saveAndPushWhitelist(whitelist);
     }
     res.redirect('/admin/dashboard');
 });
@@ -174,7 +214,7 @@ app.post('/admin/remove', (req, res) => {
     const { name } = req.body;
     const whitelist = getWhitelist();
     delete whitelist[name];
-    saveWhitelist(whitelist);
+    saveAndPushWhitelist(whitelist);
     res.redirect('/admin/dashboard');
 });
 
