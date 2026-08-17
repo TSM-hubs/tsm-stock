@@ -193,11 +193,15 @@ app.get('/vehicle', async (req, res) => {
 
         if (!folderId) return res.status(404).send('Folder not found in Google Drive.');
 
-        // Fetch images and filter out .png files
+        // Fetch images and strictly exclude .png files by name and MIME type
         const imgQuery = `q='${folderId}'+in+parents+and+mimeType+contains+'image/'+and+trashed=false&fields=files(id,name,mimeType)&orderBy=name`;
         const imgResult = await queryGoogleDrive(imgQuery);
         const images = (imgResult.files || [])
-            .filter(file => file.mimeType !== 'image/png')
+            .filter(file => {
+                const name = (file.name || '').toLowerCase();
+                const mime = (file.mimeType || '').toLowerCase();
+                return !name.endsWith('.png') && mime !== 'image/png';
+            })
             .map(file => `https://lh3.googleusercontent.com/d/${file.id}`);
 
         res.render('vehicle', { brand: brand || 'Vehicle', folder: folder || 'Details', folderId, images, ui: formatFolderToUI(folder || '') });

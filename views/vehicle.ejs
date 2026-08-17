@@ -217,7 +217,6 @@
             document.getElementById('counter').innerText = `Photo ${currentIndex + 1} of ${images.length}`;
             document.getElementById('save-btn').href = images[currentIndex];
 
-            // Update active thumbnail border highlight
             const thumbs = document.querySelectorAll('#thumb-strip img');
             thumbs.forEach((thumb, idx) => {
                 if (idx === currentIndex) {
