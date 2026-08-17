@@ -91,13 +91,6 @@ function queryGoogleDrive(apiPath) {
     });
 }
 
-const BRAND_ALIASES = {
-    'vw': 'volkswagen', 'volks': 'volkswagen', 'merc': 'mercedes', 'mb': 'mercedes', 'benz': 'mercedes',
-    'ota': 'toyota', 'toy': 'toyota', 'chevy': 'chevrolet', 'chev': 'chevrolet', 'bimmer': 'bmw',
-    'beamer': 'bmw', 'propeller': 'bmw', 'landy': 'land rover', 'range': 'land rover', 'issan': 'nissan',
-    'mitsun': 'mitsubishi', 'mitsu': 'mitsubishi', 'porsh': 'porsche', 'hyund': 'hyundai', 'isuz': 'isuzu'
-};
-
 function formatFolderToUI(folderName) {
     const lastHyphen = folderName.lastIndexOf('-');
     if (lastHyphen === -1) return { vehicle: folderName, color: 'Standard', reg: 'New Stock' };
@@ -119,8 +112,18 @@ function formatFolderToUI(folderName) {
     return { vehicle: vehicle, color: colorOrReg, reg: '✨ New Stock' };
 }
 
+// Proxy Route to Force Download
+app.get('/download', (req, res) => {
+    const fileUrl = req.query.url;
+    if (!fileUrl) return res.status(400).send('No file provided');
+    res.setHeader('Content-Disposition', 'attachment; filename="TSM-Photo.jpg"');
+    https.get(fileUrl, (imageRes) => {
+        imageRes.pipe(res);
+    }).on('error', (e) => res.status(500).send('Download failed'));
+});
+
 app.use((req, res, next) => {
-    if (req.path === '/pending' || req.path.startsWith('/admin')) return next();
+    if (req.path === '/pending' || req.path.startsWith('/admin') || req.path === '/download') return next();
 
     let deviceToken = req.cookies.tsm_device_token;
     if (!deviceToken) {
@@ -134,55 +137,32 @@ app.use((req, res, next) => {
     if (!authorizedTokens.includes(deviceToken)) {
         return res.render('pending', { token: deviceToken });
     }
-
     next();
 });
 
-app.get('/', (req, res) => {
-    res.render('index', { matches: null, query: '' });
-});
-
-app.get('/pending', (req, res) => {
-    const deviceToken = req.cookies.tsm_device_token;
-    res.render('pending', { token: deviceToken });
-});
+app.get('/', (req, res) => res.render('index', { matches: null, query: '' }));
+app.get('/pending', (req, res) => res.render('pending', { token: req.cookies.tsm_device_token }));
 
 app.post('/search', async (req, res) => {
     let query = (req.body.query || '').trim().toLowerCase();
-    if (BRAND_ALIASES[query]) query = BRAND_ALIASES[query];
-
     try {
         const brandQuery = `q='${DRIVE_ROOT_FOLDER_ID}'+in+parents+and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&fields=files(id,name)`;
         const brandResult = await queryGoogleDrive(brandQuery);
-        const brandFolders = brandResult.files || [];
-
         let allMatches = [];
-
-        for (const brand of brandFolders) {
-            const vehicleQuery = `q='${brand.id}'+in+parents+and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&fields=files(id,name)`;
-            const vehicleResult = await queryGoogleDrive(vehicleQuery);
-            const vehicleFolders = vehicleResult.files || [];
-
-            for (const vehicleFolder of vehicleFolders) {
-                if (vehicleFolder.name.toLowerCase() === 'watermark') continue;
-
-                if (vehicleFolder.name.toLowerCase().includes(query) || brand.name.toLowerCase().includes(query)) {
-                    const ui = formatFolderToUI(vehicleFolder.name);
-                    allMatches.push({ brand: brand.name, folderName: vehicleFolder.name, folderId: vehicleFolder.id, ui });
+        for (const brand of (brandResult.files || [])) {
+            const vResult = await queryGoogleDrive(`q='${brand.id}'+in+parents+and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&fields=files(id,name)`);
+            for (const vFolder of (vResult.files || [])) {
+                if (vFolder.name.toLowerCase().includes(query) || brand.name.toLowerCase().includes(query)) {
+                    allMatches.push({ brand: brand.name, folderName: vFolder.name, folderId: vFolder.id, ui: formatFolderToUI(vFolder.name) });
                 }
             }
         }
-
-        allMatches.sort((a, b) => a.folderName.localeCompare(b.folderName, undefined, { numeric: true, sensitivity: 'base' }));
         res.render('index', { matches: allMatches, query });
-    } catch (err) {
-        res.render('index', { matches: [], query });
-    }
+    } catch (err) { res.render('index', { matches: [], query }); }
 });
 
 app.get('/vehicle', async (req, res) => {
     const { brand, folder, id } = req.query;
-
     try {
         let folderId = id;
         if (!folderId && folder) {
@@ -190,64 +170,11 @@ app.get('/vehicle', async (req, res) => {
             const result = await queryGoogleDrive(q);
             if (result.files && result.files.length > 0) folderId = result.files[0].id;
         }
-
-        if (!folderId) return res.status(404).send('Folder not found in Google Drive.');
-
-        // Fetch images and strictly exclude .png files by name and MIME type
-        const imgQuery = `q='${folderId}'+in+parents+and+mimeType+contains+'image/'+and+trashed=false&fields=files(id,name,mimeType)&orderBy=name`;
-        const imgResult = await queryGoogleDrive(imgQuery);
-        const images = (imgResult.files || [])
-            .filter(file => {
-                const name = (file.name || '').toLowerCase();
-                const mime = (file.mimeType || '').toLowerCase();
-                return !name.endsWith('.png') && mime !== 'image/png';
-            })
-            .map(file => `https://lh3.googleusercontent.com/d/${file.id}`);
-
-        res.render('vehicle', { brand: brand || 'Vehicle', folder: folder || 'Details', folderId, images, ui: formatFolderToUI(folder || '') });
-    } catch (err) {
-        res.status(500).send('Error loading images from Google Drive.');
-    }
+        if (!folderId) return res.status(404).send('Folder not found.');
+        const imgResult = await queryGoogleDrive(`q='${folderId}'+in+parents+and+mimeType+contains+'image/'+and+trashed=false&fields=files(id,name,mimeType)&orderBy=name`);
+        const images = (imgResult.files || []).filter(f => !f.name.toLowerCase().endsWith('.png') && f.mimeType !== 'image/png').map(f => `https://lh3.googleusercontent.com/d/${f.id}`);
+        res.render('vehicle', { brand, folder, folderId, images, ui: formatFolderToUI(folder || '') });
+    } catch (err) { res.status(500).send('Error loading images.'); }
 });
 
-app.get('/admin', (req, res) => {
-    res.render('admin-login', { error: null });
-});
-
-app.post('/admin/login', (req, res) => {
-    if (req.body.password === ADMIN_PASSWORD) {
-        res.cookie('tsm_admin', 'true', { httpOnly: true });
-        return res.redirect('/admin/dashboard');
-    }
-    res.render('admin-login', { error: 'Incorrect password' });
-});
-
-app.get('/admin/dashboard', (req, res) => {
-    if (req.cookies.tsm_admin !== 'true') return res.redirect('/admin');
-    const whitelist = getWhitelist();
-    res.render('admin-dashboard', { whitelist });
-});
-
-app.post('/admin/add', (req, res) => {
-    if (req.cookies.tsm_admin !== 'true') return res.redirect('/admin');
-    const { name, token } = req.body;
-    if (name && token) {
-        const whitelist = getWhitelist();
-        whitelist[name.trim()] = token.trim();
-        saveAndPushWhitelist(whitelist);
-    }
-    res.redirect('/admin/dashboard');
-});
-
-app.post('/admin/remove', (req, res) => {
-    if (req.cookies.tsm_admin !== 'true') return res.redirect('/admin');
-    const { name } = req.body;
-    const whitelist = getWhitelist();
-    delete whitelist[name];
-    saveAndPushWhitelist(whitelist);
-    res.redirect('/admin/dashboard');
-});
-
-app.listen(PORT, () => {
-    console.log(`TSM Stock Portal running live on port ${PORT}`);
-});
+app.listen(PORT, () => console.log(`Running on ${PORT}`));
