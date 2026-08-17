@@ -6,70 +6,208 @@
     <title>TSM Stock Finder</title>
     <style>
         :root {
-            --bg: #f4f6f9;
-            --surface: #ffffff;
-            --text: #2c3e50;
-            --text-secondary: #7f8c8d;
-            --primary: #e74c3c;
-            --card-border: #e1e8ed;
-            --input-bg: #ffffff;
-            --badge-bg: #ecf0f1;
+            --bg-color: #f8f9fa;
+            --card-bg: #ffffff;
+            --text-color: #212529;
+            --text-muted: #6c757d;
+            --primary-color: #e53935;
+            --primary-hover: #c62828;
+            --border-color: #e9ecef;
+            --badge-bg: rgba(229, 57, 53, 0.08);
         }
-        [data-theme="dark"] {
-            --bg: #121212;
-            --surface: #1e1e1e;
-            --text: #e0e0e0;
-            --text-secondary: #a0a0a0;
-            --primary: #bb86fc;
-            --card-border: #333333;
-            --input-bg: #2c2c2c;
-            --badge-bg: #2a2a2a;
+        .dark-theme {
+            --bg-color: #121212;
+            --card-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --text-muted: #a0a0a0;
+            --primary-color: #ef5350;
+            --primary-hover: #e53935;
+            --border-color: #2c2c2c;
+            --badge-bg: rgba(239, 83, 80, 0.15);
         }
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: var(--bg); color: var(--text); padding: 20px; margin: 0; transition: background 0.3s, color 0.3s; }
-        .container { max-width: 600px; margin: auto; }
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 25px; }
-        h1 { font-size: 22px; color: var(--primary); margin: 0; font-weight: 600; }
-        .theme-btn { background: var(--surface); border: 1px solid var(--card-border); color: var(--text); padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; }
-        
-        form { display: flex; gap: 10px; margin-bottom: 25px; background: var(--surface); padding: 8px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border: 1px solid var(--card-border); }
-        input { flex: 1; padding: 12px 14px; font-size: 16px; border-radius: 8px; border: none; background: var(--input-bg); color: var(--text); outline: none; }
-        button[type="submit"] { padding: 0 20px; font-size: 16px; background: var(--primary); color: #fff; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-        
-        .card { background: var(--surface); padding: 16px; border-radius: 12px; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid var(--card-border); border-left: 5px solid var(--primary); }
-        .card-info h3 { margin: 0 0 8px 0; font-size: 16px; color: var(--text); }
-        .details-row { display: flex; gap: 8px; font-size: 13px; flex-wrap: wrap; }
-        .badge { background: var(--badge-bg); padding: 4px 8px; border-radius: 6px; color: var(--text-secondary); font-weight: 600; }
-        
-        .btn-view { background: var(--primary); color: #fff; padding: 10px 14px; text-decoration: none; border-radius: 8px; font-weight: 600; font-size: 13px; white-space: nowrap; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+        .header-container {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 800px;
+            margin: 0 auto 25px auto;
+        }
+        h1 {
+            margin: 0;
+            color: var(--primary-color);
+            font-size: 24px;
+        }
+        .theme-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-color);
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        .search-container {
+            max-width: 800px;
+            margin: 0 auto 30px auto;
+        }
+        .search-form {
+            display: flex;
+            gap: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 14px 18px;
+            font-size: 16px;
+            border: none;
+            outline: none;
+            background-color: transparent;
+            color: var(--text-color);
+        }
+        button[type="submit"] {
+            padding: 0 25px;
+            font-size: 16px;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        button[type="submit"]:hover {
+            background-color: var(--primary-hover);
+        }
+        .results-container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .result-count {
+            margin-bottom: 15px;
+            font-weight: 600;
+            color: var(--text-muted);
+            font-size: 14px;
+        }
+        .card {
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            padding: 20px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 15px rgba(0,0,0,0.06);
+        }
+        .vehicle-info {
+            flex: 1;
+        }
+        .vehicle-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            flex-wrap: wrap;
+        }
+        .vehicle-title {
+            margin: 0;
+            font-size: 17px;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+        }
+        .brand-badge {
+            background-color: var(--badge-bg);
+            color: var(--primary-color);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .vehicle-meta {
+            display: flex;
+            gap: 15px;
+            color: var(--text-muted);
+            font-size: 13px;
+            font-weight: 500;
+        }
+        .btn-view {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 10px 18px;
+            text-decoration: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            white-space: nowrap;
+            transition: background-color 0.2s;
+        }
+        .btn-view:hover {
+            background-color: var(--primary-hover);
+        }
+
+        @media (max-width: 600px) {
+            .card {
+                flex-direction: column;
+                align-items: stretch;
+            }
+            .btn-view {
+                text-align: center;
+            }
+        }
     </style>
 </head>
-<body data-theme="light">
-    <div class="container">
-        <div class="header">
-            <h1>🚗 TSM Stock Finder</h1>
-            <button class="theme-btn" onclick="toggleTheme()">🌓 Theme</button>
-        </div>
+<body>
 
-        <form action="/search" method="POST">
-            <input type="text" name="query" value="<%= query %>" placeholder="Type vehicle model (e.g. Polo, Caddy)..." required autocomplete="off">
+    <div class="header-container">
+        <h1>🚗 TSM Stock Finder</h1>
+        <button class="theme-btn" onclick="toggleTheme()">🌓 Theme</button>
+    </div>
+
+    <div class="search-container">
+        <form action="/search" method="POST" class="search-form">
+            <input type="text" name="query" value="<%= query || '' %>" placeholder="Type vehicle model (e.g., Polo, Caddy, Ranger)..." required autocomplete="off">
             <button type="submit">Search</button>
         </form>
+    </div>
 
+    <div class="results-container">
         <% if (matches !== null) { %>
             <% if (matches.length === 0) { %>
-                <p style="text-align: center; color: var(--text-secondary);">No vehicles found for "<%= query %>".</p>
+                <p style="text-align: center; color: var(--text-muted); padding: 40px;">No vehicles found matching "<%= query %>".</p>
             <% } else { %>
-                <p style="color: var(--text-secondary); font-size: 13px; margin-bottom: 12px;">Found <%= matches.length %> match(es):</p>
-                <% matches.forEach((item) => { %>
+                <p class="result-count">Found <%= matches.length %> result(s):</p>
+                <% matches.forEach(match => { %>
                     <div class="card">
-                        <div class="card-info">
-                            <h3><%= item.ui.vehicle %></h3>
-                            <div class="details-row">
-                                <span class="badge">🎨 <%= item.ui.color %></span>
-                                <span class="badge">📋 <%= item.ui.reg %></span>
+                        <div class="vehicle-info">
+                            <div class="vehicle-header">
+                                <h3 class="vehicle-title"><%= match.ui.vehicle %></h3>
+                                <span class="brand-badge"><%= match.brand %></span>
+                            </div>
+                            <div class="vehicle-meta">
+                                <span>🎨 <%= match.ui.color %></span>
+                                <span>📋 <%= match.ui.reg %></span>
                             </div>
                         </div>
-                        <a class="btn-view" href="/vehicle?brand=<%= encodeURIComponent(item.brand) %>&folder=<%= encodeURIComponent(item.folderName) %>">View Photos</a>
+                        <a href="/vehicle?brand=<%= encodeURIComponent(match.brand) %>&folder=<%= encodeURIComponent(match.folderName) %>&id=<%= match.folderId %>" class="btn-view">View Photos</a>
                     </div>
                 <% }) %>
             <% } %>
@@ -77,14 +215,12 @@
     </div>
 
     <script>
-        const savedTheme = localStorage.getItem('tsm_theme') || 'light';
-        document.body.setAttribute('data-theme', savedTheme);
-
         function toggleTheme() {
-            const current = document.body.getAttribute('data-theme');
-            const next = current === 'light' ? 'dark' : 'light';
-            document.body.setAttribute('data-theme', next);
-            localStorage.setItem('tsm_theme', next);
+            document.body.classList.toggle('dark-theme');
+            localStorage.setItem('theme', document.body.classList.contains('dark-theme') ? 'dark' : 'light');
+        }
+        if (localStorage.getItem('theme') === 'dark') {
+            document.body.classList.add('dark-theme');
         }
     </script>
 </body>
