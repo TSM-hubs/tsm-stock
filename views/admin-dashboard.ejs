@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Whitelist Manager</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; color: #2c3e50; padding: 20px; margin: 0; }
+        .container { max-width: 500px; margin: auto; background: #fff; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+        h2 { margin-top: 0; color: #e74c3c; }
+        form { display: flex; gap: 8px; margin-bottom: 25px; flex-direction: column; }
+        input { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 15px; }
+        button { padding: 10px; background: #27ae60; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; }
+        .user-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid #eee; }
+        .delete-btn { background: #e74c3c; color: white; border: none; padding: 6px 10px; border-radius: 6px; cursor: pointer; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>👥 Whitelist Manager</h2>
+        <p style="font-size: 13px; color: #7f8c8d;">Add salespeople using the access code generated on their phone.</p>
+        
+        <form action="/admin/add" method="POST">
+            <input type="text" name="name" placeholder="Salesperson Name (e.g. John)" required>
+            <input type="text" name="token" placeholder="Device Code (e.g. TSM-A1B2)" required>
+            <button type="submit">Authorize Device</button>
+        </form>
+
+        <h3>Authorized Devices:</h3>
+        <% const entries = Object.entries(whitelist); %>
+        <% if (entries.length === 0) { %>
+            <p style="font-size: 13px; color: #95a5a6;">No devices whitelisted yet.</p>
+        <% } else { %>
+            <% entries.forEach(([name, token]) => { %>
+                <div class="user-row">
+                    <div>
+                        <strong><%= name %></strong><br>
+                        <small style="color: #7f8c8d;"><%= token %></small>
+                    </div>
+                    <form action="/admin/remove" method="POST" style="margin:0;">
+                        <input type="hidden" name="name" value="<%= name %>">
+                        <button type="submit" class="delete-btn">Revoke</button>
+                    </form>
+                </div>
+            <% }) %>
+        <% } %>
+    </div>
+</body>
+</html>

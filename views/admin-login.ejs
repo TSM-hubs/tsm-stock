@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Login</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f4f6f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); width: 100%; max-width: 320px; }
+        input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box; font-size: 16px; }
+        button { width: 100%; padding: 12px; background: #e74c3c; color: #white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 16px; }
+        .error { color: #e74c3c; font-size: 13px; margin-bottom: 10px; text-align: center; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2 style="text-align: center; margin-top: 0; color: #2c3e50;">TSM Admin</h2>
+        <% if (error) { %><div class="error"><%= error %></div><% } %>
+        <form action="/admin/login" method="POST">
+            <input type="password" name="password" placeholder="Admin Password" required>
+            <button type="submit">Login</button>
+        </form>
+    </div>
+</body>
+</html>

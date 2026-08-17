@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Access Restricted</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f4f6f9; color: #2c3e50; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .box { background: #fff; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); text-align: center; max-width: 400px; width: 90%; border-top: 5px solid #e74c3c; }
+        h2 { color: #e74c3c; margin-top: 0; }
+        .token-box { background: #ecf0f1; padding: 12px; font-size: 20px; font-weight: bold; border-radius: 8px; margin: 20px 0; letter-spacing: 1px; color: #2c3e50; }
+        p { font-size: 14px; color: #7f8c8d; line-height: 1.5; }
+    </style>
+</head>
+<body>
+    <div class="box">
+        <h2>🔒 Access Restricted</h2>
+        <p>Your device is not authorized to use the TSM Stock Portal yet.</p>
+        <p>Send your unique Access Code below to DeWet so he can authorize your phone:</p>
+        <div class="token-box"><%= token %></div>
+        <p style="font-size: 12px;">Once authorized, refresh this page to begin searching stock!</p>
+    </div>
+</body>
+</html>
