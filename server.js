@@ -1,5 +1,4 @@
 const express = require('express');
-const fs = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const cookieParser = require('cookie-parser');
@@ -10,36 +9,32 @@ const PORT = process.env.PORT || 3000;
 
 const WHITELIST_FILE = path.join(__dirname, 'whitelist.json');
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'admin123';
+const DRIVE_API_KEY = process.env.GOOGLE_DRIVE_API_KEY;
+const DRIVE_ROOT_FOLDER_ID = '1h-SXsg1CLoU2_g7uIf4jT6UHE0kP_2WE';
 
 app.set('view engine', 'ejs');
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use(cookieParser());
 
-const STOCK_ROOT = process.env.STOCK_ROOT || path.join(__dirname, 'stock_photos');
-app.use('/photos', express.static(STOCK_ROOT));
-
 function getWhitelist() {
     try {
-        if (fs.existsSync(WHITELIST_FILE)) {
-            return JSON.parse(fs.readFileSync(WHITELIST_FILE, 'utf8'));
+        if (require('fs').existsSync(WHITELIST_FILE)) {
+            return JSON.parse(require('fs').readFileSync(WHITELIST_FILE, 'utf8'));
         }
     } catch (err) {}
     return { "DeWet": "TSM-ADMIN" };
 }
 
-// Function to auto-push whitelist changes to GitHub so they persist across deploys
 function saveAndPushWhitelist(whitelistData) {
-    fs.writeFileSync(WHITELIST_FILE, JSON.stringify(whitelistData, null, 2), 'utf8');
-
+    require('fs').writeFileSync(WHITELIST_FILE, JSON.stringify(whitelistData, null, 2), 'utf8');
     const token = process.env.GITHUB_TOKEN;
-    if (!token) return; // If token isn't set yet, just save locally
+    if (!token) return;
 
     const repo = 'TSM-hubs/tsm-stock';
     const filePath = 'whitelist.json';
     const fileContent = Buffer.from(JSON.stringify(whitelistData, null, 2)).toString('base64');
 
-    // Step 1: Get current file SHA on GitHub
     const getOptions = {
         hostname: 'api.github.com',
         path: `/repos/${repo}/contents/${filePath}`,
@@ -52,11 +47,8 @@ function saveAndPushWhitelist(whitelistData) {
         res.on('data', chunk => data += chunk);
         res.on('end', () => {
             let sha = '';
-            try {
-                sha = JSON.parse(data).sha;
-            } catch (e) {}
+            try { sha = JSON.parse(data).sha; } catch (e) {}
 
-            // Step 2: Update file on GitHub
             const payload = JSON.stringify({
                 message: 'Auto-update whitelist via Admin Panel',
                 content: fileContent,
@@ -75,14 +67,28 @@ function saveAndPushWhitelist(whitelistData) {
                 }
             };
 
-            const req = https.request(putOptions, (putRes) => {
-                // Successfully pushed to GitHub
-            });
+            const req = https.request(putOptions, () => {});
             req.write(payload);
             req.end();
         });
-    }).on('error', (err) => {
-        console.error('GitHub sync error:', err);
+    }).on('error', () => {});
+}
+
+// Helper to query Google Drive API
+function queryGoogleDrive(apiPath) {
+    return new Promise((resolve, reject) => {
+        const url = `https://www.googleapis.com/drive/v3/files?${apiPath}&key=${DRIVE_API_KEY}`;
+        https.get(url, (res) => {
+            let data = '';
+            res.on('data', chunk => data += chunk);
+            res.on('end', () => {
+                try {
+                    resolve(JSON.parse(data));
+                } catch (e) {
+                    reject(e);
+                }
+            });
+        }).on('error', reject);
     });
 }
 
@@ -143,40 +149,66 @@ app.get('/pending', (req, res) => {
     res.render('pending', { token: deviceToken });
 });
 
-app.post('/search', (req, res) => {
+// Search Google Drive Folders
+app.post('/search', async (req, res) => {
     let query = (req.body.query || '').trim().toLowerCase();
     if (BRAND_ALIASES[query]) query = BRAND_ALIASES[query];
 
-    let allMatches = [];
-    if (!fs.existsSync(STOCK_ROOT)) return res.render('index', { matches: [], query });
+    try {
+        // Fetch brands inside the main Google Drive folder
+        const brandQuery = `q='${DRIVE_ROOT_FOLDER_ID}'+in+parents+and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&fields=files(id,name)`;
+        const brandResult = await queryGoogleDrive(brandQuery);
+        const brandFolders = brandResult.files || [];
 
-    const brandFolders = fs.readdirSync(STOCK_ROOT).filter(f => fs.statSync(path.join(STOCK_ROOT, f)).isDirectory());
+        let allMatches = [];
 
-    for (const brand of brandFolders) {
-        const brandPath = path.join(STOCK_ROOT, brand);
-        const vehicleFolders = fs.readdirSync(brandPath).filter(f => fs.statSync(path.join(brandPath, f)).isDirectory() && f.toLowerCase() !== 'watermark');
-        const matches = vehicleFolders.filter(f => f.toLowerCase().includes(query) || brand.toLowerCase().includes(query));
-        for (const match of matches) {
-            const ui = formatFolderToUI(match);
-            allMatches.push({ brand, folderName: match, ui });
+        for (const brand of brandFolders) {
+            // Fetch vehicle folders inside each brand folder
+            const vehicleQuery = `q='${brand.id}'+in+parents+and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&fields=files(id,name)`;
+            const vehicleResult = await queryGoogleDrive(vehicleQuery);
+            const vehicleFolders = vehicleResult.files || [];
+
+            for (const vehicleFolder of vehicleFolders) {
+                if (vehicleFolder.name.toLowerCase() === 'watermark') continue;
+
+                if (vehicleFolder.name.toLowerCase().includes(query) || brand.name.toLowerCase().includes(query)) {
+                    const ui = formatFolderToUI(vehicleFolder.name);
+                    allMatches.push({ brand: brand.name, folderName: vehicleFolder.name, folderId: vehicleFolder.id, ui });
+                }
+            }
         }
-    }
 
-    allMatches.sort((a, b) => a.folderName.localeCompare(b.folderName, undefined, { numeric: true, sensitivity: 'base' }));
-    res.render('index', { matches: allMatches, query });
+        allMatches.sort((a, b) => a.folderName.localeCompare(b.folderName, undefined, { numeric: true, sensitivity: 'base' }));
+        res.render('index', { matches: allMatches, query });
+    } catch (err) {
+        res.render('index', { matches: [], query });
+    }
 });
 
-app.get('/vehicle', (req, res) => {
-    const { brand, folder } = req.query;
-    const targetPath = path.join(STOCK_ROOT, brand, folder);
+// Fetch vehicle images directly from Google Drive ID
+app.get('/vehicle', async (req, res) => {
+    const { brand, folder, id } = req.query;
 
-    if (!fs.existsSync(targetPath)) return res.send('Folder not found.');
+    try {
+        let folderId = id;
+        if (!folderId) {
+            // Fallback search if ID isn't passed directly
+            const q = `q=name='${folder}'+and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&fields=files(id,name)`;
+            const result = await queryGoogleDrive(q);
+            if (result.files && result.files.length > 0) folderId = result.files[0].id;
+        }
 
-    const images = fs.readdirSync(targetPath)
-        .filter(f => /\.(jpg|jpeg)$/i.test(f))
-        .sort((a, b) => a.localeCompare(b, undefined, { numeric: true, sensitivity: 'base' }));
+        if (!folderId) return res.send('Folder not found in Google Drive.');
 
-    res.render('vehicle', { brand, folder, images, ui: formatFolderToUI(folder) });
+        // Get images inside the vehicle folder
+        const imgQuery = `q='${folderId}'+in+parents+and+mimeType+contains+'image/'+and+trashed=false&fields=files(id,name)&orderBy=name`;
+        const imgResult = await queryGoogleDrive(imgQuery);
+        const images = (imgResult.files || []).map(file => `https://lh3.googleusercontent.com/d/${file.id}`);
+
+        res.render('vehicle', { brand, folder, images, ui: formatFolderToUI(folder) });
+    } catch (err) {
+        res.send('Error loading images from Google Drive.');
+    }
 });
 
 // --- ADMIN PANEL ROUTES ---
