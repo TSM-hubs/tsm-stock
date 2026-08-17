@@ -6,21 +6,23 @@
     <title><%= ui.vehicle %> - TSM Stock Photos</title>
     <style>
         :root {
-            --bg-color: #f4f4f9;
+            --bg-color: #f8f9fa;
             --card-bg: #ffffff;
-            --text-color: #333333;
+            --text-color: #212529;
             --primary-color: #e53935;
-            --border-color: #dddddd;
+            --primary-hover: #c62828;
+            --border-color: #e9ecef;
         }
         .dark-theme {
             --bg-color: #121212;
             --card-bg: #1e1e1e;
             --text-color: #e0e0e0;
             --primary-color: #ef5350;
-            --border-color: #333333;
+            --primary-hover: #e53935;
+            --border-color: #2c2c2c;
         }
         body {
-            font-family: Arial, sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
             margin: 0;
@@ -28,7 +30,7 @@
             text-align: center;
         }
         .container {
-            max-width: 600px;
+            max-width: 700px;
             margin: 0 auto;
         }
         .top-bar {
@@ -38,41 +40,57 @@
             margin-bottom: 20px;
         }
         .back-btn, .theme-btn {
-            background: none;
+            background: var(--card-bg);
             border: 1px solid var(--border-color);
             color: var(--text-color);
-            padding: 8px 15px;
-            border-radius: 5px;
+            padding: 8px 14px;
+            border-radius: 6px;
             text-decoration: none;
             cursor: pointer;
+            font-weight: 500;
         }
         h2 {
             margin: 5px 0;
+            font-size: 22px;
         }
         .badge-container {
             margin-bottom: 15px;
         }
         .badge {
             display: inline-block;
-            background: rgba(229, 57, 53, 0.1);
+            background: rgba(229, 57, 53, 0.08);
             color: var(--primary-color);
-            padding: 5px 10px;
+            padding: 4px 10px;
             border-radius: 4px;
-            font-size: 14px;
-            font-weight: bold;
-            margin: 0 5px;
+            font-size: 13px;
+            font-weight: 700;
+            margin: 0 4px;
+        }
+        .bulk-download {
+            display: block;
+            background-color: #2e7d32;
+            color: white;
+            padding: 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            margin-bottom: 20px;
+            transition: opacity 0.2s;
+        }
+        .bulk-download:hover {
+            opacity: 0.9;
         }
         .carousel-card {
             background-color: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: 8px;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+            border-radius: 10px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
             overflow: hidden;
             margin-bottom: 20px;
         }
         .image-container {
             width: 100%;
-            height: 400px;
+            height: 420px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -90,29 +108,50 @@
             padding: 15px 20px;
             background-color: var(--card-bg);
             border-top: 1px solid var(--border-color);
+            flex-wrap: wrap;
+            gap: 10px;
         }
         .action-btn {
             background-color: var(--primary-color);
             color: white;
             border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
+            padding: 8px 16px;
+            border-radius: 6px;
             font-size: 14px;
+            font-weight: 600;
             cursor: pointer;
             text-decoration: none;
+            transition: background-color 0.2s;
         }
         .action-btn:hover {
-            opacity: 0.9;
+            background-color: var(--primary-hover);
         }
-        .bulk-download {
-            display: block;
-            background-color: #2e7d32;
-            color: white;
+        .gallery-strip {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
             padding: 12px;
-            border-radius: 5px;
-            text-decoration: none;
-            font-weight: bold;
-            margin-bottom: 20px;
+            background-color: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.03);
+            scrollbar-width: thin;
+        }
+        .gallery-strip img {
+            width: 75px;
+            height: 75px;
+            object-fit: cover;
+            cursor: pointer;
+            border-radius: 6px;
+            border: 2px solid transparent;
+            transition: transform 0.2s, border-color 0.2s;
+            flex-shrink: 0;
+        }
+        .gallery-strip img:hover {
+            transform: scale(1.05);
+        }
+        .gallery-strip img.active-thumb {
+            border-color: var(--primary-color);
         }
     </style>
 </head>
@@ -130,23 +169,31 @@
             <span class="badge">📋 <%= ui.reg %></span>
         </div>
 
-        <% if (images && images.length > 0) { %>
-            <a href="<%= images[0] %>" target="_blank" class="bulk-download">📥 Open Full Image Gallery in Google Drive</a>
+        <a href="https://drive.google.com/drive/folders/<%= folderId %>" target="_blank" class="bulk-download">📥 Open Full Gallery in Google Drive (For Bulk Download)</a>
 
+        <% if (images && images.length > 0) { %>
             <div class="carousel-card">
                 <div class="image-container">
                     <img id="active-image" src="<%= images[0] %>" alt="Vehicle Photo">
                 </div>
                 <div class="card-footer">
-                    <span id="counter">Photo 1 of <%= images.length %></span>
-                    <% if (images.length > 1) { %>
-                        <button class="action-btn" onclick="nextImage()">Next Photo ➡</button>
-                    <% } %>
+                    <span id="counter" style="font-weight: 600; font-size: 14px;">Photo 1 of <%= images.length %></span>
+                    <div style="display: flex; gap: 8px;">
+                        <button class="action-btn" onclick="changeImage(-1)">⬅ Prev</button>
+                        <button class="action-btn" onclick="changeImage(1)">Next ➡</button>
+                    </div>
                     <a id="save-btn" href="<%= images[0] %>" target="_blank" download class="action-btn" style="background-color: #2e7d32;">Save Photo</a>
                 </div>
             </div>
+
+            <!-- THUMBNAIL GALLERY PREVIEW STRIP -->
+            <div class="gallery-strip" id="thumb-strip">
+                <% images.forEach((img, index) => { %>
+                    <img src="<%= img %>" class="<%= index === 0 ? 'active-thumb' : '' %>" onclick="goToImage(<%= index %>)" alt="Thumb <%= index + 1 %>">
+                <% }) %>
+            </div>
         <% } else { %>
-            <p style="padding: 40px; color: #777;">No photos found for this vehicle folder.</p>
+            <p style="padding: 40px; color: #777;">No valid photos found in this folder.</p>
         <% } %>
     </div>
 
@@ -154,12 +201,32 @@
         const images = <%- JSON.stringify(images || []) %>;
         let currentIndex = 0;
 
-        function nextImage() {
+        function changeImage(step) {
             if (images.length === 0) return;
-            currentIndex = (currentIndex + 1) % images.length;
+            currentIndex = (currentIndex + step + images.length) % images.length;
+            updateDisplay();
+        }
+
+        function goToImage(index) {
+            currentIndex = index;
+            updateDisplay();
+        }
+
+        function updateDisplay() {
             document.getElementById('active-image').src = images[currentIndex];
             document.getElementById('counter').innerText = `Photo ${currentIndex + 1} of ${images.length}`;
             document.getElementById('save-btn').href = images[currentIndex];
+
+            // Update active thumbnail border highlight
+            const thumbs = document.querySelectorAll('#thumb-strip img');
+            thumbs.forEach((thumb, idx) => {
+                if (idx === currentIndex) {
+                    thumb.classList.add('active-thumb');
+                    thumb.scrollIntoView({ behavior: 'smooth', inline: 'nearest', block: 'nearest' });
+                } else {
+                    thumb.classList.remove('active-thumb');
+                }
+            });
         }
 
         function toggleTheme() {

@@ -180,30 +180,27 @@ app.post('/search', async (req, res) => {
     }
 });
 
-// Fixed Vehicle Route with Direct ID Support
 app.get('/vehicle', async (req, res) => {
     const { brand, folder, id } = req.query;
 
     try {
         let folderId = id;
-
         if (!folderId && folder) {
             const q = `q=name='${folder.replace(/'/g, "\\'")}'+\\and+mimeType='application/vnd.google-apps.folder'+and+trashed=false&fields=files(id,name)`;
             const result = await queryGoogleDrive(q);
-            if (result.files && result.files.length > 0) {
-                folderId = result.files[0].id;
-            }
+            if (result.files && result.files.length > 0) folderId = result.files[0].id;
         }
 
-        if (!folderId) {
-            return res.status(404).send('Folder not found in Google Drive.');
-        }
+        if (!folderId) return res.status(404).send('Folder not found in Google Drive.');
 
-        const imgQuery = `q='${folderId}'+in+parents+and+mimeType+contains+'image/'+and+trashed=false&fields=files(id,name)&orderBy=name`;
+        // Fetch images and filter out .png files
+        const imgQuery = `q='${folderId}'+in+parents+and+mimeType+contains+'image/'+and+trashed=false&fields=files(id,name,mimeType)&orderBy=name`;
         const imgResult = await queryGoogleDrive(imgQuery);
-        const images = (imgResult.files || []).map(file => `https://lh3.googleusercontent.com/d/${file.id}`);
+        const images = (imgResult.files || [])
+            .filter(file => file.mimeType !== 'image/png')
+            .map(file => `https://lh3.googleusercontent.com/d/${file.id}`);
 
-        res.render('vehicle', { brand: brand || 'Vehicle', folder: folder || 'Details', images, ui: formatFolderToUI(folder || '') });
+        res.render('vehicle', { brand: brand || 'Vehicle', folder: folder || 'Details', folderId, images, ui: formatFolderToUI(folder || '') });
     } catch (err) {
         res.status(500).send('Error loading images from Google Drive.');
     }
